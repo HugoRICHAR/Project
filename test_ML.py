@@ -76,5 +76,27 @@ num_pipeline=Pipeline([('imputer',SimpleImputer(strategy="median")),('attribs_ad
 housing_num_tr=num_pipeline.fit_transform(housing_num)
 
 from sklearn.compose import ColumnTransformer
+num_attribs=list(housing_num)
+cat_attribs=["ocean_proximity"]
 
+full_pipeline=ColumnTransformer([("num",num_pipeline,num_attribs),("cat",OneHotEncoder(),cat_attribs)])
+housing_prepared=full_pipeline.fit_transform(housing)
+
+housing["income_cat"]=pd.cut(housing["median_income"],bins=[0.,1.5,3.0,4.5,6,np.inf],labels=[1,2,3,4,5])
+
+from sklearn.model_selection import StratifiedShuffleSplit
+split=StratifiedShuffleSplit(n_splits=1,test_size=0.2,random_state=42)
+for train_index,test_index in split.split(housing,housing["income_cat"]):
+    strat_train_set=housing.loc[train_index]
+    strat_test_set=housing.loc[test_index]
+
+housing=strat_train_set.drop("median_house_value",axis=1)
+housing_labels=strat_train_set["median_house_value"].copy()
+
+
+
+from sklearn.linear_model import LinearRegression
+
+lin_reg=LinearRegression()
+lin_reg.fit(housing_prepared,housing_labels)
 
